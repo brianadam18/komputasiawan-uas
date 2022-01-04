@@ -1,4 +1,4 @@
-name: aksens-webserver
+name: laravel
 
 on:
   push:
@@ -12,26 +12,23 @@ jobs:
       - name: 'Start build job'
         run: |
           echo "Starting the build job"
-
       - name: 'Checkout'
         uses: actions/checkout@v2
 
+     
       - name: Compile CSS and Javascript
         run: |
           npm install
           npm run prod
-
-      - name: Configure PHP 7.4
+      - name: Configure PHP 8.0
         uses: shivammathur/setup-php@master
         with:
-          php-version: 7.4
+          php-version: 8.0
           extensions: mbstring, ctype, fileinfo, openssl, PDO, bcmath, json, tokenizer, xml
 
       - name: Composer install
         run: |
-          composer update
           composer install --no-dev --no-interaction --prefer-dist
-
       - name: 'Login to Dockerhub'
         uses: docker/login-action@v1
         with:
@@ -40,9 +37,8 @@ jobs:
 
       - name: 'Build and push'
         run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/aksens-webserver .
-          docker push ${{ secrets.DOCKERHUB_USERNAME}}/aksens-webserver
-
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/laravel .
+          docker push ${{ secrets.DOCKERHUB_USERNAME}}/laravel
       - name: 'Write config'
         run: |
           mkdir ~/.oci
@@ -54,7 +50,6 @@ jobs:
           echo "key_file=~/.oci/oci_api_key.pem" >> ~/.oci/config
           echo "${{secrets.OCI_KEY_FILE}}" >> ~/.oci/oci_api_key.pem
           echo "${{secrets.OCI_KEY_PUBLIC}}" >> ~/.oci/oci_api_key_public.pem
-
       - name: 'Install OCI CLI'
         run: |
           curl -L -O https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh
@@ -62,23 +57,20 @@ jobs:
           ./install.sh --accept-all-defaults
           echo "/home/runner/bin" >> $GITHUB_PATH
           exec -l $SHELL
-
       - name: 'Fix Config File Permissions'
         run: |
           oci setup repair-file-permissions --file /home/runner/.oci/config
           oci setup repair-file-permissions --file /home/runner/.oci/oci_api_key.pem
-
       - name: 'Check Existing Instance'
         run: |
           echo "INSTANCE_OCID=$( \
             oci compute instance list \
             --lifecycle-state RUNNING \
             --compartment-id ${{secrets.VM_COMPARTMENT_OCID}} \
-            --display-name aksens-webserver \
+            --display-name cicd-demo \
             --query "data [0].id" \
             --raw-output \
             )" >> $GITHUB_ENV
-
       - name: 'Create Instance'
         if: ${{!env.INSTANCE_OCID}}
         run: |
@@ -89,7 +81,7 @@ jobs:
             --shape ${{secrets.VM_SHAPE}} \
             --shape-config '{"memoryInGBs": 1, "ocpus": 1}' \
             --assign-public-ip true \
-            --display-name aksens-webserver \
+            --display-name cicd-demo \
             --image-id ${{secrets.VM_CUSTOM_IMAGE_OCID}} \
             --ssh-authorized-keys-file /home/runner/.oci/oci_api_key_public.pem \
             --subnet-id ${{secrets.VM_SUBNET_OCID}} \
@@ -97,7 +89,6 @@ jobs:
             --query "data.id" \
             --raw-output \
             )" >> $GITHUB_ENV
-
       - name: 'Get Instance IP'
         run: |
           echo "INSTANCE_IP=$( \
@@ -107,14 +98,12 @@ jobs:
             --raw-output \
             )" >> $GITHUB_ENV
           echo Instance IP: ${{ env.INSTANCE_IP }}
-
       - name: 'Wait for SSH'
         run: |
           while ! nc -w5 -z ${{ env.INSTANCE_IP }} 22; do
           sleep 5
           echo "SSH not available..."
           done; echo "SSH ready!"
-
       - name: 'Deploy Deployment Configuration'
         uses: appleboy/scp-action@master
         with:
@@ -131,7 +120,6 @@ jobs:
           username: opc
           key: ${{secrets.OCI_KEY_FILE}}
           script: |
-            sudo yum install mysql mysql-server
             sudo yum install -y yum-utils
             sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
             sudo yum install -y docker-ce docker-ce-cli containerd.io
