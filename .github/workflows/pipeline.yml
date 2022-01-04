@@ -20,7 +20,10 @@ jobs:
         run: |
           npm install
           npm run prod
+<<<<<<< HEAD
 
+=======
+>>>>>>> 849d55c72c76b368b8004762c02c49b769ebc037
       - name: Configure PHP 7.4
         uses: shivammathur/setup-php@master
         with:
@@ -40,9 +43,14 @@ jobs:
 
       - name: 'Build and push'
         run: |
+<<<<<<< HEAD
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/aksens-webserver .
           docker push ${{ secrets.DOCKERHUB_USERNAME}}/aksens-webserver
 
+=======
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/laravel .
+          docker push ${{ secrets.DOCKERHUB_USERNAME}}/laravel
+>>>>>>> 849d55c72c76b368b8004762c02c49b769ebc037
       - name: 'Write config'
         run: |
           mkdir ~/.oci
@@ -74,7 +82,11 @@ jobs:
             oci compute instance list \
             --lifecycle-state RUNNING \
             --compartment-id ${{secrets.VM_COMPARTMENT_OCID}} \
+<<<<<<< HEAD
             --display-name aksens-webserver \
+=======
+            --display-name laravel \
+>>>>>>> 849d55c72c76b368b8004762c02c49b769ebc037
             --query "data [0].id" \
             --raw-output \
             )" >> $GITHUB_ENV
@@ -89,7 +101,11 @@ jobs:
             --shape ${{secrets.VM_SHAPE}} \
             --shape-config '{"memoryInGBs": 1, "ocpus": 1}' \
             --assign-public-ip true \
+<<<<<<< HEAD
             --display-name aksens-webserver \
+=======
+            --display-name laravel \
+>>>>>>> 849d55c72c76b368b8004762c02c49b769ebc037
             --image-id ${{secrets.VM_CUSTOM_IMAGE_OCID}} \
             --ssh-authorized-keys-file /home/runner/.oci/oci_api_key_public.pem \
             --subnet-id ${{secrets.VM_SUBNET_OCID}} \
@@ -139,4 +155,4 @@ jobs:
             sudo firewall-cmd --zone=docker --add-service=http --permanent
             sudo firewall-cmd --reload
             sudo pip3 install docker-compose
-            sudo /usr/local/bin/docker-compose up -d
+            sudo /usr/local/bin/docker-compose up -
